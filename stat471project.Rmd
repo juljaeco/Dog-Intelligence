@@ -1,0 +1,60 @@
+---
+title: "stat471project"
+author: "Julja Eco"
+date: "2022-12-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r proj}
+
+library(tidyverse)
+df <- read.csv("C:/Users/ecoju/Downloads/Dog Intelligence (1).csv") |>
+  drop_na()
+df <- df[!(df$height_low_inches==0 | df$weight_low_lbs==0),] |>
+  mutate(
+    intelligence=
+      case_when(reps_upper==4 ~ "Brightest",
+                reps_upper==15 ~ "Excellent",
+                reps_upper==25 ~ "Above Average",
+                reps_upper==40 ~ "Average",
+                reps_upper==80 ~ "Fair",
+                reps_upper==100 ~ "Lowest Degree"),
+    avg_height_inches=(height_low_inches + height_high_inches)/2,
+    avg_weight_lbs=(weight_low_lbs+weight_high_lbs)/2,
+    learning_score=(reps_lower+reps_upper)/2
+  ) |>
+  select(-(height_low_inches:reps_upper))
+
+ggplot(df, aes(x=avg_height_inches,y=avg_weight_lbs,col=intelligence)) + geom_point() + geom_smooth(method = "lm", formula=y~x, se=FALSE) + facet_wrap(~intelligence, nrow=2, ncol=3) + labs(x="Dog Height in Inches", y="Dog Weight in Lbs")
+
+
+library(skimr)
+df |>
+  skim()
+
+learningscore_model <- lm(learning_score ~ avg_height_inches + avg_weight_lbs, data=df)
+get_regression_table(learningscore_model)
+
+df |>
+  select(learning_score, avg_height_inches, avg_weight_lbs) |>
+  cor()
+# Learning Score with the average height is -0.7091788. This indicates a strong negative linear relationship. So they are inversely proportionate, meaning if one increases, the other one decreases and vice versa.
+
+# Learning Score with the average weight is -0.7408776. This indicates a strong negative linear relationship. So they are inversely proportionate, meaning if one increases, the other one decreases and vice versa
+
+# Additionally, the average height with the average weight is 0.6937314. This indicates a strong positive linear relationship. So they are directly proportionate, meaning if one increases, the other one also increases.
+
+# There is high degree of collinearity between learning score and dog measurement explanatory variables
+
+library(gridExtra)
+p1 <- ggplot(df, aes(x = avg_height_inches, y = learning_score)) +
+geom_point() + labs(x = "Dog Height", y = "Learning Score", title = "Dog Height and Learning Score") +
+geom_smooth(method = "lm", se = FALSE)
+p2 <- ggplot(df, aes(x = avg_weight_lbs, y = learning_score)) + geom_point() + labs(x = "Dog Weight", y = "Learning Score", title = "Dog Weight and Learning Score") + geom_smooth(method = "lm", se = FALSE)
+grid.arrange(p1, p2, nrow=1)
+
+```
